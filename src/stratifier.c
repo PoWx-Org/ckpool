@@ -29,6 +29,7 @@
 #include "utlist.h"
 #include "connector.h"
 #include "generator.h"
+#include "heavyhash.h"
 #include "rootstock.h"
 
 #include "rsktestconfig.h"
@@ -1967,6 +1968,7 @@ share_diff(char *coinbase, const uchar *enonce1bin, const workbase_t *wb, const 
 	unsigned char merkle_root[32], merkle_sha[64];
 	uint32_t *data32, *swap32, benonce32;
 	uchar hash1[32];
+	uchar pow_hash[32];
 	char data[80];
 	int i;
 
@@ -2017,8 +2019,11 @@ share_diff(char *coinbase, const uchar *enonce1bin, const workbase_t *wb, const 
 	sha256(swap, 80, hash1);
 	sha256(hash1, 32, hash);
 
-	/* Calculate the diff of the share here */
-	return diff_from_target(hash);
+	/* compute proof of work hash */
+	compute_blockheader_heavyhash(swap32, pow_hash);
+
+	/* Calculate the diff using proof of work hash */
+	return diff_from_target(pow_hash);
 }
 
 static void add_remote_blockdata(ckpool_t *ckp, json_t *val, const int cblen, const char *coinbase,

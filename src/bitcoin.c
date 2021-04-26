@@ -147,6 +147,11 @@ bool gen_gbtbase(connsock_t *cs, gbtbase_t *gbt)
 	coinbase_aux = json_object_get(res_val, "coinbaseaux");
 	flags = json_string_value(json_object_get(coinbase_aux, "flags"));
 
+	if (!flags) {
+		flags = "";
+	}
+
+
 	if (unlikely(!previousblockhash || !target || !version || !curtime || !bits || !coinbase_aux || !flags)) {
 		LOGERR("JSON failed to decode GBT %s %s %d %d %s %s", previousblockhash, target, version, curtime, bits, flags);
 		goto out;

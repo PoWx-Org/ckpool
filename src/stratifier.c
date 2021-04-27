@@ -619,7 +619,11 @@ static void generate_coinbase(const ckpool_t *ckp, workbase_t *wb)
 	int outputcount = 1;
 	g64 = wb->coinbasevalue;
 	if (ckp->donvalid) {
-		d64 = g64 / 20; // 5% donation
+		d64 = 0;
+		LOGDEBUG("DONATION PERCENT %d", ckp->donatepercent);
+		if (ckp->donatepercent) {
+			d64 = g64 * ckp->donatepercent / 1000; // 5% donation
+		}
 		g64 -= d64; // To guarantee integers add up to the original coinbasevalue
 		outputcount++;
 	}

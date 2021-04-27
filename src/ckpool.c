@@ -1562,6 +1562,7 @@ static void parse_config(ckpool_t *ckp)
 	json_get_int64(&ckp->maxdiff, json_conf, "maxdiff");
 	json_get_string(&ckp->logdir, json_conf, "logdir");
 	json_get_int(&ckp->maxclients, json_conf, "maxclients");
+	json_get_int(&ckp->donatepercent, json_conf, "donatepercent");
 	arr_val = json_object_get(json_conf, "proxy");
 	if (arr_val && json_is_array(arr_val)) {
 		arr_size = json_array_size(arr_val);
@@ -1921,6 +1922,8 @@ int main(int argc, char **argv)
 		ckp.btcaddress = ckp.donaddress;
 	if (!ckp.blockpoll)
 		ckp.blockpoll = 100;
+	if (!ckp.donatepercent)
+		ckp.donatepercent = 0;
 	if (!ckp.nonce1length)
 		ckp.nonce1length = 4;
 	else if (ckp.nonce1length < 2 || ckp.nonce1length > 8)

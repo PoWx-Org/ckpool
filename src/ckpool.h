@@ -171,6 +171,8 @@ struct ckpool_instance {
 	/* How many clients maximum to accept before rejecting further */
 	int maxclients;
 
+	int donatepercent; 
+
 	/* API message queue */
 	ckmsgq_t *ckpapi;
 

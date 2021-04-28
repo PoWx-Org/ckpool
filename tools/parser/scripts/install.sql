@@ -2,7 +2,7 @@ CREATE DATABASE IF NOT EXISTS pool_base;
 USE pool_base;
 
 CREATE TABLE IF NOT EXISTS `mined_blocks` (
-  `id_block` int unsigned NOT NULL,
+  `id_block` int unsigned NOT NULL AUTO_INCREMENT,
   `hash` varchar(256) NOT NULL,
   `date_mined` datetime NOT NULL,
   `height` int unsigned NOT NULL,
@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS `mined_blocks` (
   UNIQUE KEY `hash_UNIQUE` (`hash`),
   UNIQUE KEY `date_mined_UNIQUE` (`date_mined`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 
 CREATE TABLE IF NOT EXISTS `miners` (
   `id_miner` int unsigned NOT NULL AUTO_INCREMENT,

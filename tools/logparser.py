@@ -40,13 +40,13 @@ else:
 
 def found_block(line):
     print("Block found, doing something usefull")
-    block_number = parse("[{time:ti}] Solved and confirmed block {height:d} {}", line)
-    print(block_number)
+    parsed_info = parse("[{time:ti}] Solved and confirmed block {height:d} {}", line)
+    print(parsed_info)
     read_shares()
-    height = block_number['height']
-    block_hash = rpc_connection.getblockhash(block_number)
-    block_info = rpc_connection.getblock(block_number, 3)
-    print(blockinfo)
+    height = parsed_info['height']
+    block_hash = rpc_connection.getblockhash([height])
+    block_info = rpc_connection.getblock([block_hash, 3])
+    print(block_info)
 
 def read_shares():
     usersDir = os.path.join(logDir, 'users')
@@ -67,6 +67,5 @@ with open(logPath,'r') as infile:
         lines = infile.readlines()
         if len(lines) > 0:
             for line in lines:
-                print( line.rstrip())
                 if 'Solved and confirmed block' in line:
                     found_block(line)

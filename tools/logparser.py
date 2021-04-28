@@ -2,15 +2,10 @@ import os
 
 from parse import *
 import json
-
+from utils import get_reward
 
 
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
-
-
-
-
-
 logDir = os.path.join("..", "logs")
 logPath = os.path.join(logDir, "ckpool.log")
 
@@ -27,6 +22,7 @@ print(configures)
 rpc_url = configures['btcd'][0]['url']
 rpc_auth = configures['btcd'][0]['auth']
 rpc_pass = configures['btcd'][0]['pass']
+reward_addr = configures['btcaddress']
 
 rpc_connection = AuthServiceProxy(f"http://{rpc_auth}:{rpc_pass}@{rpc_url}")
 
@@ -45,8 +41,11 @@ def found_block(line):
     read_shares()
     height = parsed_info['height']
     block_hash = rpc_connection.getblockhash([height])
-    block_info = rpc_connection.getblock([block_hash, 3])
-    print(block_info)
+    block_info_str = rpc_connection.getblock([block_hash, 3])
+    block_info = json.loads(block_info_str)
+    reward = get_reward(block_info, reward_addr)
+    print("Reward: {reward}")
+
 
 def read_shares():
     usersDir = os.path.join(logDir, 'users')

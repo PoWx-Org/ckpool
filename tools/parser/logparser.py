@@ -3,6 +3,7 @@ import os
 from parse import *
 import json
 from utils import get_reward
+from dbutils import PoolConnector
 
 
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
@@ -27,7 +28,7 @@ rpc_pass = configures['btcd'][0]['pass']
 reward_addr = configures['btcaddress']
 rpc_connection = AuthServiceProxy(f"http://{rpc_auth}:{rpc_pass}@{rpc_url}")
 
-
+pool_con = PoolConnector
 
 if os.path.isfile(logPath):
     print(f"path {logPath} is a file, everyhting ok")
@@ -47,6 +48,7 @@ def found_block(line):
     block_info = rpc_connection.getblock([block_hash, 3])
     reward = get_reward(block_info, reward_addr)
     share_stats = read_shares()
+    pool_con.add_mined_block(block_hash, str(parsed_info['time']), height, reward)
     print(share_stats)
     print(f"Reward: {reward}")
 

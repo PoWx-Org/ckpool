@@ -58,8 +58,10 @@ tools/automation/build
 .idea
 notifier
 libckpool.a
-tools
 .vscode/.ropeproject/config.py
 .gitignore
 .vscode/.ropeproject/objectdb
 exampleblock.txt
+tools/~$statistics.xlsx
+tools/Untitled.ipynb
+tools/.ipynb_checkpoints/Untitled-checkpoint.ipynb

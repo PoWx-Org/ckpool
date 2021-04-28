@@ -6,11 +6,13 @@ from utils import get_reward
 
 
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
-logDir = os.path.join("..", "logs")
+scriptPath = os.path.dirname(os.path.realpath(__file__))
+ckpoolDir = os.path.join([scriptPath, "..", "..", "ckpool"])
+
+logDir = os.path.join(ckpoolDir, "logs")
 logPath = os.path.join(logDir, "ckpool.log")
 
-
-confPath=os.path.join("..", "ckpool.conf")
+confPath=os.path.join(ckpoolDir, "ckpool.conf")
 
 configures = dict()
 with open(confPath,'r') as conf_file:
@@ -23,7 +25,6 @@ rpc_url = configures['btcd'][0]['url']
 rpc_auth = configures['btcd'][0]['auth']
 rpc_pass = configures['btcd'][0]['pass']
 reward_addr = configures['btcaddress']
-
 rpc_connection = AuthServiceProxy(f"http://{rpc_auth}:{rpc_pass}@{rpc_url}")
 
 
@@ -34,6 +35,8 @@ else:
     print(f"paht {logPath} is not a file!")
     exit(0)
 
+
+
 def found_block(line):
     print("Block found, doing something usefull")
     parsed_info = parse("[{time:ti}] Solved and confirmed block {height:d} {}", line)
@@ -43,10 +46,15 @@ def found_block(line):
     block_hash = rpc_connection.getblockhash([height])
     block_info = rpc_connection.getblock([block_hash, 3])
     reward = get_reward(block_info, reward_addr)
+    share_stats = read_shares()
+    print(share_stats)
     print(f"Reward: {reward}")
 
 
+
+
 def read_shares():
+    share_stats = dict()
     usersDir = os.path.join(logDir, 'users')
     print(usersDir)
     print(os.listdir(usersDir))
@@ -56,7 +64,13 @@ def read_shares():
         with open(user_file_path,'r') as user_file:
             cur_stat = user_file.read()
             info = json.loads(cur_stat)
-            print(info)
+            shares = info['shares']
+            share_stats.update(user, shares)
+    return share_stats
+        
+
+
+
 
 
 with open(logPath,'r') as infile:

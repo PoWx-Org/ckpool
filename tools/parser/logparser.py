@@ -28,7 +28,7 @@ rpc_pass = configures['btcd'][0]['pass']
 reward_addr = configures['btcaddress']
 rpc_connection = AuthServiceProxy(f"http://{rpc_auth}:{rpc_pass}@{rpc_url}")
 
-pool_con = PoolConnector
+pool_con = PoolConnector()
 
 if os.path.isfile(logPath):
     print(f"path {logPath} is a file, everyhting ok")

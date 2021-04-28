@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS `mined_blocks` (
   UNIQUE KEY `block_id_UNIQUE` (`id_block`),
   UNIQUE KEY `hash_UNIQUE` (`hash`),
   UNIQUE KEY `date_mined_UNIQUE` (`date_mined`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 CREATE TABLE IF NOT EXISTS `miners` (
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS `miners` (
   PRIMARY KEY (`id_miner`),
   UNIQUE KEY `id_miner_UNIQUE` (`id_miner`),
   UNIQUE KEY `name_UNIQUE` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `blocks_stats` (
   `id_stat` int unsigned NOT NULL AUTO_INCREMENT,
@@ -32,4 +32,4 @@ CREATE TABLE IF NOT EXISTS `blocks_stats` (
   KEY `id_block_foreign_idx` (`id_block`),
   CONSTRAINT `id_block_foreign` FOREIGN KEY (`id_block`) REFERENCES `mined_blocks` (`id_block`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `id_miner_foreign` FOREIGN KEY (`id_miner`) REFERENCES `miners` (`id_miner`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -70,7 +70,7 @@ class PoolConnector:
         self.execute_query(query)
 
 
-    def update_stats(self, block_id, users_stats):
+    def set_stats(self, block_id, users_stats):
         update_users(users_stats)
         for user, shares in users_stats.items():
             u_id = self.get_user_id_by_name(user)

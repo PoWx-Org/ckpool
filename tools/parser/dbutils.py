@@ -44,3 +44,49 @@ class PoolConnector:
                 VALUES ('{hash}', '{date}', {height}, {reward});'''
         self.execute_query(query)
 
+    def get_query_results(self, query):
+        conn = pymysql.connect( host=self.hostname, user=self.username, passwd=self.password)
+        print(query)
+        cur = conn.cursor()
+        self.execute_complex_query(cur, query)
+        res = list(cur.fetchall())
+        conn.close()
+        return res
+
+    def get_block_id_by_hash(self, hash):
+        query = f'''SELECT id_block FROM pool_base.mined_blocks
+                    WHERE hash='{hash}';'''
+        return self.get_query_results(query)[0][0]
+
+    def get_user_id_by_name(self, name):
+        query = f'''SELECT id_miner FROM pool_base.miners
+                    WHERE name='{name}';'''
+        return self.get_query_results(query)[0][0]
+
+    def insert_single_stat(self, id_block, id_miner, shares):
+        query = f'''USE `pool_base`; INSERT INTO `blocks_sats` 
+                (`id_block`, `id_miner`, `shares`) 
+                VALUES ({id_block}, {id_miner}, {shares});'''
+        self.execute_query(query)
+
+
+    def update_stats(self, block_id, users_stats):
+        update_users(users_stats)
+        for user, shares in users_stats.items():
+            u_id = self.get_user_id_by_name(user)
+            insert_single_stat(id_block, u_id, shares)
+
+
+    def add_user(self, user):
+        query = f'''USE `pool_base`; INSERT INTO `miners` 
+                (`name`) 
+                VALUES ('{user}');'''
+        self.execute_query(query)
+
+    def update_users(self, users_stats):
+        cur_users = list(users_stats.keys())
+        users_db = [i[0] for i in get_query_results("SELECT name FROM pool_base.miners")]
+        new_users = [i for i in cur_users if i not in users_db]
+        for user in new_users:
+            add_user(user)
+        

@@ -33,7 +33,7 @@ pool_con = PoolConnector()
 if os.path.isfile(logPath):
     print(f"path {logPath} is a file, everyhting ok")
 else:
-    print(f"paht {logPath} is not a file!")
+    print(f"path {logPath} is not a file!")
     exit(0)
 
 
@@ -49,6 +49,9 @@ def found_block(line):
     reward = get_reward(block_info, reward_addr)
     share_stats = read_shares()
     pool_con.add_mined_block(block_hash, str(parsed_info['time']), height, reward)
+    block_id = pool_con.get_block_id_by_hash(block_hash)
+    pool_con.set_stats(block_id, share_stats)
+
     print(share_stats)
     print(f"Reward: {reward}")
 

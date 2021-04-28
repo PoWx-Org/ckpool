@@ -67,7 +67,7 @@ def read_shares():
             cur_stat = user_file.read()
             info = json.loads(cur_stat)
             shares = info['shares']
-            share_stats.update(user, shares)
+            share_stats.update({user: shares})
     return share_stats
         
 

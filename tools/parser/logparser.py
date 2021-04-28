@@ -8,7 +8,7 @@ from dbutils import PoolConnector
 
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 scriptPath = os.path.dirname(os.path.realpath(__file__))
-ckpoolDir = os.path.join([scriptPath, "..", "..", "ckpool"])
+ckpoolDir = os.path.join(scriptPath, "..", "..", "ckpool")
 
 logDir = os.path.join(ckpoolDir, "logs")
 logPath = os.path.join(logDir, "ckpool.log")

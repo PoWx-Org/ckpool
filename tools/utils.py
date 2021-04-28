@@ -6,8 +6,6 @@ def get_reward(block_info, reward_addr):
             return 'coinbase' in txn['vin'][0].keys()
         except:
             return False
-    import numpy as np
-
     coinbase_txn = next(obj for obj in block_info['tx'] if is_coinbase(obj))
 
     def is_reward(vout1, reward_addr):

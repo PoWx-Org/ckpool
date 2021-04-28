@@ -41,10 +41,9 @@ def found_block(line):
     read_shares()
     height = parsed_info['height']
     block_hash = rpc_connection.getblockhash([height])
-    block_info_str = rpc_connection.getblock([block_hash, 3])
-    block_info = json.loads(block_info_str)
+    block_info = rpc_connection.getblock([block_hash, 3])
     reward = get_reward(block_info, reward_addr)
-    print("Reward: {reward}")
+    print(f"Reward: {reward}")
 
 
 def read_shares():

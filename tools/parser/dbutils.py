@@ -71,7 +71,7 @@ class PoolConnector:
 
 
     def set_stats(self, block_id, users_stats):
-        update_users(users_stats)
+        self.update_users(users_stats)
         for user, shares in users_stats.items():
             u_id = self.get_user_id_by_name(user)
             insert_single_stat(id_block, u_id, shares)
@@ -85,8 +85,8 @@ class PoolConnector:
 
     def update_users(self, users_stats):
         cur_users = list(users_stats.keys())
-        users_db = [i[0] for i in get_query_results("SELECT name FROM pool_base.miners")]
+        users_db = [i[0] for i in self.get_query_results("SELECT name FROM pool_base.miners")]
         new_users = [i for i in cur_users if i not in users_db]
         for user in new_users:
-            add_user(user)
+            self.add_user(user)
         

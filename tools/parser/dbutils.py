@@ -43,7 +43,4 @@ class PoolConnector:
                 (`hash`, `date_mined`, `height`, `reward`) 
                 VALUES ('{hash}', '{date}', {height}, {reward});'''
         self.execute_query(query)
-    
-
-connector = PoolConnector()
 

@@ -74,7 +74,7 @@ class PoolConnector:
         self.update_users(users_stats)
         for user, shares in users_stats.items():
             u_id = self.get_user_id_by_name(user)
-            self.insert_single_stat(id_block, u_id, shares)
+            self.insert_single_stat(block_id, u_id, shares)
 
 
     def add_user(self, user):

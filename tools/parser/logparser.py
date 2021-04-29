@@ -137,14 +137,20 @@ class PayingThread(Thread):
 stopFlag = Event()
 
 
-payment_thread = PayingThread(stopFlag, curs)
+payment_thread = PayingThread(stopFlag, pool_con)
 
 def check_mature_blocks(connector, rpc_connection, maturity=100):
     print("checking mature blocks")
     cur_height = rpc_connection.getblockchaininfo()['blocks']
     blocks = connector.get_mature_blocks(cur_height=cur_height, maturity=maturity)
-    #print(blocks)
+    print(blocks)
     for index, block_example in blocks.iterrows():
+        answer = request_rpc('getblock', [block_example['hash']])
+
+        if answer['result'] is None:
+            print(f'Block {dict(block_example)} disappered!')
+            connector.add_transaction(block_example['id'], 'null', 'disappeared', 'null')
+            continue
         pay_stat = get_pay_info(block_example, connector, rpc_connection)
         pay_for_block(block_example['id'],  pay_stat, connector, rpc_connection)
         
@@ -200,5 +206,5 @@ def request_rpc(method, params):
         print('No response from rpc, check Bitcoin is running on this machine')
 
 
-check_mature_blocks(pool_con, rpc_connection, MATURITY)
-# print(request_rpc('getblock', ['00000001def079541f25d143c89e117c8c448d61002ff146a7d6122f73d96313']))
+payment_thread.start()
+parser_thread.start()

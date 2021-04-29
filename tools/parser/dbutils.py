@@ -41,13 +41,17 @@ class PoolConnector:
             cur.execute(subquery)
 
     def execute_query(self, query):
-        conn = pymysql.connect( host=self.hostname, user=self.username, passwd=self.password)
-        if self.verbose:
+        try:
+            conn = pymysql.connect( host=self.hostname, user=self.username, passwd=self.password)
+            if self.verbose:
+                print(query)
+            cur = conn.cursor()
+            self.execute_complex_query(cur, query)
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print('FAILED TO EXECUTE QUERY')
             print(query)
-        cur = conn.cursor()
-        self.execute_complex_query(cur, query)
-        conn.commit()
-        conn.close()
 
     def add_mined_block(self, hash, date, height, reward):
         query = f'''USE `pool_base`; INSERT INTO `mined_blocks` 
@@ -56,14 +60,18 @@ class PoolConnector:
         self.execute_query(query)
 
     def get_query_results(self, query):
-        conn = pymysql.connect( host=self.hostname, user=self.username, passwd=self.password)
-        if self.verbose:
+        try:
+            conn = pymysql.connect( host=self.hostname, user=self.username, passwd=self.password)
+            if self.verbose:
+                print(query)
+            cur = conn.cursor()
+            self.execute_complex_query(cur, query)
+            res = list(cur.fetchall())
+            conn.close()
+            return res
+        except:
+            print("EXCEPTION IN QUERY:")
             print(query)
-        cur = conn.cursor()
-        self.execute_complex_query(cur, query)
-        res = list(cur.fetchall())
-        conn.close()
-        return res
 
     def get_block_id_by_hash(self, hash):
         query = f'''SELECT id_block FROM pool_base.mined_blocks
@@ -105,14 +113,16 @@ class PoolConnector:
     def get_mature_blocks(self, cur_height, maturity=100):
         blocks = pd.DataFrame(self.get_query_results(f"USE pool_base; CALL get_mature_blocks({cur_height}, {maturity})"), columns=['id', 'hash', 'date_mined', 'height', 'reward'])
         return blocks
+
     def get_prev_block(self, block_id):
         block = self.get_query_results(f'''USE pool_base; 
                                             SELECT mb.id_block, mb.hash, mb.date_mined, mb.height, mb.reward 
                                             FROM mined_blocks mb LEFT JOIN transactions tx
+                                                ON mb.id_block = tx.id_block
                                             WHERE mb.id_block < {block_id}
                                             AND tx.status='sent'
-                                            ORDER BY mb.id_block DESC''')
-        if len(block)==0:
+                                            ORDER BY mb.id_block DESC LIMIT 1''')
+        if block is None or len(block)==0:
             return None
         return pd.DataFrame(block, columns=['id', 'hash', 'date_mined', 'height', 'reward']).iloc[0]
 
@@ -121,6 +131,7 @@ class PoolConnector:
         if len(shares)==0:
             return []
         return pd.DataFrame(shares, columns=['user', 'shares'])
+
     def add_transaction(self, id_block, txn_hash, status, amount):
         if txn_hash != 'null':
             txn_hash = f"'{txn_hash}'"

@@ -68,3 +68,5 @@ tools/.ipynb_checkpoints/Untitled-checkpoint.ipynb
 tools/parser/__pycache__
 tools/__pycache__/utils.cpython-38.pyc
 tools/error.log
+src/sha256_code_release/sha256_avx2_rorx2.A
+.vscode/settings.json

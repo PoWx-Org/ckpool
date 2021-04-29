@@ -1,6 +1,7 @@
 import json
 import pymysql
 import os
+import pandas as pd
 # def insert_stats
 
 # install_db()
@@ -8,7 +9,9 @@ import os
 # execute_query('SELECT * FROM pool_base.mined_blocks;')
 
 class PoolConnector:
-    def __init__(self,):
+    def __init__(self, verbose=False):
+
+        self.verbose = verbose
         scriptPath = os.path.dirname(os.path.realpath(__file__))
         sql_conf_file_name=os.path.join(scriptPath, "parser.conf")
         with open(sql_conf_file_name, "r") as sql_conf_file:
@@ -21,9 +24,16 @@ class PoolConnector:
 
     def install_db(self):
         install_query_path = os.path.join('scripts', 'install.sql')
+        proc_query_path = os.path.join('scripts', 'get_mature_blocks.sql')
         with open(install_query_path, 'r') as query_file:
             install_query = query_file.read()
+        with open(proc_query_path, 'r') as query_file:
+            proc_query = query_file.read()
         self.execute_query(install_query)
+        conn = pymysql.connect( host=self.hostname, user=self.username, passwd=self.password, db='pool_base')
+        cur = conn.cursor()
+        cur.execute(proc_query)
+        conn.close()
 
     def execute_complex_query(self, cur, general_query):
         queries = [query.strip() for query in general_query.split(';') if len(query) > 0]
@@ -32,7 +42,8 @@ class PoolConnector:
 
     def execute_query(self, query):
         conn = pymysql.connect( host=self.hostname, user=self.username, passwd=self.password)
-        print(query)
+        if self.verbose:
+            print(query)
         cur = conn.cursor()
         self.execute_complex_query(cur, query)
         conn.commit()
@@ -46,7 +57,8 @@ class PoolConnector:
 
     def get_query_results(self, query):
         conn = pymysql.connect( host=self.hostname, user=self.username, passwd=self.password)
-        print(query)
+        if self.verbose:
+            print(query)
         cur = conn.cursor()
         self.execute_complex_query(cur, query)
         res = list(cur.fetchall())
@@ -89,4 +101,31 @@ class PoolConnector:
         new_users = [i for i in cur_users if i not in users_db]
         for user in new_users:
             self.add_user(user)
+    
+    def get_mature_blocks(self, cur_height, maturity=100):
+        blocks = pd.DataFrame(self.get_query_results(f"USE pool_base; CALL get_mature_blocks({cur_height}, {maturity})"), columns=['id', 'hash', 'date_mined', 'height', 'reward'])
+        return blocks
+    def get_prev_block(self, block_id):
+        block = self.get_query_results(f'''USE pool_base; 
+                                            SELECT mb.id_block, mb.hash, mb.date_mined, mb.height, mb.reward 
+                                            FROM mined_blocks mb LEFT JOIN transactions tx
+                                            WHERE mb.id_block < {block_id}
+                                            AND tx.status='sent'
+                                            ORDER BY mb.id_block DESC''')
+        if len(block)==0:
+            return None
+        return pd.DataFrame(block, columns=['id', 'hash', 'date_mined', 'height', 'reward']).iloc[0]
+
+    def get_shares(self, id_block):
+        shares = self.get_query_results(f"USE pool_base; SELECT user, shares FROM stats_blocks_view WHERE id_block = {id_block}")
+        if len(shares)==0:
+            return []
+        return pd.DataFrame(shares, columns=['user', 'shares'])
+    def add_transaction(self, id_block, txn_hash, status, amount):
+        if txn_hash != 'null':
+            txn_hash = f"'{txn_hash}'"
+        query = f'''USE `pool_base`; INSERT INTO `transactions` 
+                (`id_block`, `hash_txn`, `status`, `amount`) 
+                VALUES ({id_block}, {txn_hash}, '{status}', {amount});'''
+        self.execute_query(query)
         

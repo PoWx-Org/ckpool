@@ -64,7 +64,7 @@ class PoolConnector:
         return self.get_query_results(query)[0][0]
 
     def insert_single_stat(self, id_block, id_miner, shares):
-        query = f'''USE `pool_base`; INSERT INTO `blocks_sats` 
+        query = f'''USE `pool_base`; INSERT INTO `blocks_stats` 
                 (`id_block`, `id_miner`, `shares`) 
                 VALUES ({id_block}, {id_miner}, {shares});'''
         self.execute_query(query)

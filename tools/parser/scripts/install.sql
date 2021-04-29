@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS `mined_blocks` (
   `height` int unsigned NOT NULL,
   `reward` decimal(14,9) unsigned NOT NULL,
   PRIMARY KEY (`id_block`),
-  UNIQUE KEY `block_id_UNIQUE` (`id_block`),
   UNIQUE KEY `hash_UNIQUE` (`hash`),
   UNIQUE KEY `date_mined_UNIQUE` (`date_mined`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -32,3 +31,15 @@ CREATE TABLE IF NOT EXISTS `blocks_stats` (
   CONSTRAINT `id_block_foreign` FOREIGN KEY (`id_block`) REFERENCES `mined_blocks` (`id_block`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `id_miner_foreign` FOREIGN KEY (`id_miner`) REFERENCES `miners` (`id_miner`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE OR REPLACE VIEW  `pool_base`.`stats_blocks_view` AS
+    SELECT 
+        `mb`.`hash` AS `hash`,
+        `mb`.`height` AS `height`,
+        `u`.`name` AS `user`,
+        `bs`.`shares` AS `shares`,
+        `mb`.`date_mined` AS `date_mined`
+    FROM
+        ((`pool_base`.`blocks_stats` `bs`
+        LEFT JOIN `pool_base`.`miners` `u` ON ((`bs`.`id_miner` = `u`.`id_miner`)))
+        LEFT JOIN `pool_base`.`mined_blocks` `mb` ON ((`bs`.`id_block` = `mb`.`id_block`)));

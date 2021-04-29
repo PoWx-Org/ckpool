@@ -33,6 +33,8 @@
 #include "stratifier.h"
 #include "connector.h"
 
+#define DEFAULT_DONADDRESS "bcrt1qpa8yeek4t0fcgmxk85px64x2d6qvzn2lh7m03l"
+
 ckpool_t *global_ckp;
 
 static bool open_logfile(ckpool_t *ckp)
@@ -1563,6 +1565,7 @@ static void parse_config(ckpool_t *ckp)
 	json_get_string(&ckp->logdir, json_conf, "logdir");
 	json_get_int(&ckp->maxclients, json_conf, "maxclients");
 	json_get_int(&ckp->donatepercent, json_conf, "donatepercent");
+	json_get_int(&ckp->donaddress, json_conf, "donaddress");
 	arr_val = json_object_get(json_conf, "proxy");
 	if (arr_val && json_is_array(arr_val)) {
 		arr_size = json_array_size(arr_val);
@@ -1916,8 +1919,8 @@ int main(int argc, char **argv)
 		if (!ckp.btcdpass[i])
 			ckp.btcdpass[i] = strdup("pass");
 	}
-
-	ckp.donaddress = "14BMjogz69qe8hk9thyzbmR5pg34mVKB1e";
+	if (!ckp.donaddress)
+		ckp.donaddress = DEFAULT_DONADDRESS;
 	if (!ckp.btcaddress)
 		ckp.btcaddress = ckp.donaddress;
 	if (!ckp.blockpoll)

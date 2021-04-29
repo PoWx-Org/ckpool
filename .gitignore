@@ -65,3 +65,6 @@ exampleblock.txt
 tools/~$statistics.xlsx
 tools/Untitled.ipynb
 tools/.ipynb_checkpoints/Untitled-checkpoint.ipynb
+tools/parser/__pycache__
+tools/__pycache__/utils.cpython-38.pyc
+tools/error.log

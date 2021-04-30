@@ -196,7 +196,7 @@ payment_thread = PayingThread(stopFlag, pool_con)
 
 
 def check_mature_blocks(connector, rpc_connection, maturity=100):
-    cur_height = r.getblockchaininfo()['blocks']
+    cur_height = rpc_connection.getblockchaininfo()['result']['blocks']
     blocks = connector.get_mature_blocks(cur_height=cur_height, maturity=maturity)
     print(blocks)
     for index, block_example in blocks.iterrows():
@@ -219,7 +219,7 @@ def get_pay_info(block_example, connector, rpc_connection):
         shares_to_pay = cur_shares
     else:
         prev_shares = connector.get_shares(prev_block['id'])
-        shares_diff = cur_shares.merge(prev_shares, how="left", on="user", suffixes=['_cur', '_prev'])
+        shares_diff = cur_shares.merge(prev_shares, how="left", on="user", suffixes=['_cur', '_prev']).fillna(0)
         shares_diff['shares'] = shares_diff['shares_cur'] - shares_diff['shares_prev']
         shares_to_pay = shares_diff[['user', 'shares']]
     
@@ -268,10 +268,8 @@ def pay_for_block(id_block, pay_stat, connector, rpc_connection):
 
 
 
-# print("starting threads...")
-# print("parser thread...")
-# parser_thread.start()
-# print("payment thread...")
-# payment_thread.start()
-
-print(validate_addr("abcd"))
+print("starting threads...")
+print("parser thread...")
+parser_thread.start()
+print("payment thread...")
+payment_thread.start()

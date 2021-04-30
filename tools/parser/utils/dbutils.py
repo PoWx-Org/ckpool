@@ -13,10 +13,10 @@ class PoolConnector:
 
         self.verbose = verbose
         scriptPath = os.path.dirname(os.path.realpath(__file__))
-        sql_conf_file_name=os.path.join(scriptPath, "parser.conf")
-        with open(sql_conf_file_name, "r") as sql_conf_file:
-            sql_conf_str = sql_conf_file.read()
-            sql_conf = json.loads(sql_conf_str)['sql']
+        conf_file_name=os.path.join(scriptPath, "..", "parser.conf")
+        with open(conf_file_name, "r") as sql_conf_file:
+            conf_str = sql_conf_file.read()
+            sql_conf = json.loads(conf_str)['sql']
         self.username = sql_conf['auth']
         self.password = sql_conf['pass']
         self.hostname = sql_conf['host']

@@ -9,8 +9,8 @@ def get_reward(block_info, reward_addr):
             return False
     coinbase_txn = next(obj for obj in block_info['tx'] if is_coinbase(obj))
 
-    def is_reward(vout1, reward_addr):
 
+    def is_reward(vout1, reward_addr):
         try:
             vout = vout1['scriptPubKey']
             if len(vout['addresses']) != 1:

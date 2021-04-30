@@ -2,8 +2,8 @@ import os
 
 from parse import *
 import json
-from utils import get_reward
-from dbutils import PoolConnector
+from utils.utils import get_reward
+from utils.dbutils import PoolConnector
 import pandas as pd
 import numpy as np
 from threading import Thread, Event

@@ -11,6 +11,9 @@ import warnings
 warnings.filterwarnings("ignore")
 
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
+
+print("reading confgs...")
+
 scriptPath = os.path.dirname(os.path.realpath(__file__))
 ckpoolDir = os.path.join(scriptPath, "..", "..")
 
@@ -26,6 +29,8 @@ with open(conf_path,'r') as conf_file:
     configures = json.loads(conf_text)
 
 MATURITY = configures['maturity']
+CHECKMATURE_PERIOD = configures['checkmature_period']
+CHECKLOGS_PERIOD = configures['checklogs_period']
 
 pool_conf_path=os.path.join(ckpoolDir, "ckpool.conf")
 
@@ -35,16 +40,22 @@ with open(pool_conf_path,'r') as pool_conf_file:
     conf_text = conf_text.split("Comments from here on are ignored.")[0]
     pool_configures = json.loads(conf_text)
 
+
 rpc_url = pool_configures['btcd'][0]['url']
 rpc_auth = pool_configures['btcd'][0]['auth']
 rpc_pass = pool_configures['btcd'][0]['pass']
 reward_addr = pool_configures['btcaddress']
+
+
+print("Establishing rpc connection...")
 rpc_connection = AuthServiceProxy(f"http://{rpc_auth}:{rpc_pass}@{rpc_url}")
 
+
+print('creating database or connecting to existing one...')
 pool_con = PoolConnector()
 
 if os.path.isfile(logPath):
-    print(f"path {logPath} is a file, everyhting ok")
+    print(f"path {logPath} is a file, will try to parse it...")
 else:
     print(f"path {logPath} is not a file!")
     exit(0)
@@ -95,9 +106,14 @@ class ParserThread(Thread):
         Thread.__init__(self)
         self.stopped = event
         self.curs = curs
+        self.counter = 0
+        self.print_period = 1 if (30 //  CHECKLOGS_PERIOD) == 0 else 30 //  CHECKLOGS_PERIOD
 
     def run(self):
-        while not self.stopped.wait(0.5):
+        while not self.stopped.wait(CHECKLOGS_PERIOD):
+            self.counter += 1
+            if (self.counter % self.print_period) == 0:
+                print(f'checked logs {self.print_period} times')
             with open(logPath,'r') as infile:
                 infile.seek(self.curs)
                 lines = infile.readlines()
@@ -110,6 +126,7 @@ class ParserThread(Thread):
                                 print(f"Ecxception {e} occured during handling line:\n {line}\n")
                 self.curs = infile.tell()
 
+print("creating log reading thread...")
 stopFlag = Event()
 
 with open(logPath,'r') as infile:
@@ -128,19 +145,19 @@ class PayingThread(Thread):
         self.connector = connector
 
     def run(self):
-        while not self.stopped.wait(2):
+        print("checking mature blocks")
+        check_mature_blocks(self.connector, rpc_connection, MATURITY)
+        while not self.stopped.wait(CHECKMATURE_PERIOD):
             print("checking mature blocks")
             check_mature_blocks(self.connector, rpc_connection, MATURITY)
             pass
-            
+
+print("creating paying thread...")
 
 stopFlag = Event()
-
-
 payment_thread = PayingThread(stopFlag, pool_con)
 
 def check_mature_blocks(connector, rpc_connection, maturity=100):
-    print("checking mature blocks")
     cur_height = rpc_connection.getblockchaininfo()['blocks']
     blocks = connector.get_mature_blocks(cur_height=cur_height, maturity=maturity)
     print(blocks)
@@ -149,6 +166,7 @@ def check_mature_blocks(connector, rpc_connection, maturity=100):
 
         if answer['result'] is None:
             print(f'Block {dict(block_example)} disappered!')
+            print(answer) 
             connector.add_transaction(block_example['id'], 'null', 'disappeared', 'null')
             continue
         pay_stat = get_pay_info(block_example, connector, rpc_connection)
@@ -184,17 +202,22 @@ def pay_for_block(id_block, pay_stat, connector, rpc_connection):
     print(amounts)
     amounts_string = json.dumps(amounts)
     params = ["", amounts, 6, 'mining_payout', list(amounts.keys()), True, 6, 'ECONOMICAL']
+    print("paying for block")
     print(params)
     try:
-        txn_hash = request_rpc('sendmany', params)['result']
-        print(txn_hash)
+        answ = request_rpc('sendmany', params)
+        txn_hash = answ['result']
+        if txn_hash is None:
+            print('result is None')
+            print(answ)
+        print("Transaction hash: ", txn_hash)
         connector.add_transaction(id_block, txn_hash, 'sent', sum(pay_stat['shares']))
     except Exception as e:
         print(e)
 
 import requests
 def request_rpc(method, params):
-    url = "http://127.0.0.1:19998/"
+    url = f"http://{rpc_url}/"
     payload = json.dumps({"method": method, "params": params})
     headers = {'content-type': "application/json", 'cache-control': "no-cache"}
     try:
@@ -205,6 +228,8 @@ def request_rpc(method, params):
     except:
         print('No response from rpc, check Bitcoin is running on this machine')
 
-
-payment_thread.start()
+print("starting threads...")
+print("parser thread...")
 parser_thread.start()
+print("payment thread...")
+payment_thread.start()

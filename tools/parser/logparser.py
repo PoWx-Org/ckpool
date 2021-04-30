@@ -12,8 +12,6 @@ from threading import Thread, Event
 import warnings
 warnings.filterwarnings("ignore")
 
-############################### TODO: avoid this library and use request_rpc(..) instead
-from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 
 
 
@@ -52,27 +50,30 @@ rpc_pass = pool_configures['btcd'][0]['pass']
 reward_addr = pool_configures['btcaddress']
 
 
-########## TODO: avoid this library
-print("Establishing rpc connection...")
-rpc_connection = AuthServiceProxy(f"http://{rpc_auth}:{rpc_pass}@{rpc_url}")
-
 
 
 ########### Good request, reurns message if answer has no results
 import requests
-def request_rpc(method, params):
+def request_rpc(method, params=[], verbosity=1):
     url = f"http://{rpc_url}/"
     payload = json.dumps({"method": method, "params": params})
     headers = {'content-type': "application/json", 'cache-control': "no-cache"}
+    if verbosity >=2:
+        print("trying to request")
+        print("url", rpc_url)
+        print('auth', (rpc_auth, rpc_pass)) 
+        print('payload', payload)
+        print('headers', headers)
     try:
         response = requests.request("POST", url, data=payload, headers=headers, auth=(rpc_auth, rpc_pass))
-        if response['result'] is None:
+        if json.loads(response.text)['result'] is None:
             print(f'Got response result None for method {method}:\n{response}')
-        return json.loads(response.text)
+        return json.loads(response.text)['result']
     except requests.exceptions.RequestException as e:
         print(e)
-    except:
-        print('No response from rpc, check Bitcoin is running on this machine')
+    except Exception as e:
+        print('No response from rpc, check optical Bitcoin is running on this machine')
+        print(e)
 
 
 
@@ -98,8 +99,8 @@ def found_block(line):
     print(parsed_info)
     read_shares()
     height = parsed_info['height']
-    block_hash = rpc_connection.getblockhash([height])
-    block_info = rpc_connection.getblock([block_hash, 3])
+    block_hash = request_rpc("getblockhash", [height])
+    block_info = request_rpc("getblock", [block_hash, 3])
     reward = get_reward(block_info, reward_addr)
     share_stats = read_shares()
     pool_con.add_mined_block(block_hash, str(parsed_info['time']), height, reward)
@@ -162,7 +163,7 @@ print("creating log reading thread...")
 stopFlag = Event()
 
 
-############## TODO: make something if file is too big. Make file cleaning
+############## TODO: do something if file is too big. Make file cleaning
 with open(logPath,'r') as infile:
     lines = infile.readlines()
     curs = infile.tell()
@@ -180,10 +181,10 @@ class PayingThread(Thread):
 
     def run(self):
         print("checking mature blocks")
-        check_mature_blocks(self.connector, rpc_connection, MATURITY)
+        check_mature_blocks(self.connector, MATURITY)
         while not self.stopped.wait(CHECKMATURE_PERIOD):
             print("checking mature blocks")
-            check_mature_blocks(self.connector, rpc_connection, MATURITY)
+            check_mature_blocks(self.connector, MATURITY)
             pass
 
 print("creating paying thread...")
@@ -195,23 +196,23 @@ payment_thread = PayingThread(stopFlag, pool_con)
 
 
 
-def check_mature_blocks(connector, rpc_connection, maturity=100):
-    cur_height = rpc_connection.getblockchaininfo()['result']['blocks']
+def check_mature_blocks(connector, maturity=100):
+    cur_height = request_rpc('getblockchaininfo')['blocks']
     blocks = connector.get_mature_blocks(cur_height=cur_height, maturity=maturity)
     print(blocks)
     for index, block_example in blocks.iterrows():
         answer = request_rpc('getblock', [block_example['hash']])
 
-        if answer['result'] is None:
+        if answer is None:
             print(f'Block {dict(block_example)} disappered!')
             print(answer) 
             connector.add_transaction(block_example['id'], 'null', 'disappeared', 'null')
             continue
-        pay_stat = get_pay_info(block_example, connector, rpc_connection)
-        pay_for_block(block_example['id'],  pay_stat, connector, rpc_connection)
+        pay_stat = get_pay_info(block_example, connector)
+        pay_for_block(block_example['id'],  pay_stat, connector)
         
 
-def get_pay_info(block_example, connector, rpc_connection):
+def get_pay_info(block_example, connector):
     reward = block_example['reward']
     prev_block = connector.get_prev_block(block_example['id'])
     cur_shares = connector.get_shares(block_example['id'])
@@ -231,20 +232,20 @@ def get_pay_info(block_example, connector, rpc_connection):
         all_shares=1
     shares_to_pay['shares'] = (shares_to_pay['shares']* reward / all_shares).astype(float).round(8)
     shares_to_pay = shares_to_pay[shares_to_pay['shares'] != 0]
-    shares_to_pay['valid_addr'] = shares_to_pay['user'].aplly(validate_addr)
+    shares_to_pay['valid_addr'] = shares_to_pay['user'].apply(validate_addr)
     print(shares_to_pay)
     shares_to_pay = shares_to_pay[shares_to_pay['valid_addr']]
     return shares_to_pay[['user', 'shares']]
 
 def validate_addr(addr):
     answ = request_rpc('validateaddress', [addr])
-    if answ['result'] is None:
+    if answ is None:
         return False
-    if not answ['result']['is_valid']:
+    if not answ['isvalid']:
         print(f"Invalid address {addr}!")
-    return answ['result']['is_valid']
+    return answ['isvalid']
 
-def pay_for_block(id_block, pay_stat, connector, rpc_connection):
+def pay_for_block(id_block, pay_stat, connector):
     if len(pay_stat) == 0:
         print('nothing to pay, adding record zero payed')
         connector.add_transaction(id_block, 'null', 'sent', 0)
@@ -257,7 +258,7 @@ def pay_for_block(id_block, pay_stat, connector, rpc_connection):
     print(params)
     try:
         answ = request_rpc('sendmany', params)
-        txn_hash = answ['result']
+        txn_hash = answ
         if txn_hash is None:
             print('result is None')
             print(answ)
@@ -273,3 +274,5 @@ print("parser thread...")
 parser_thread.start()
 print("payment thread...")
 payment_thread.start()
+# print("testing")
+# print(request_rpc('getblockchaininfo', [], verbosity=2))

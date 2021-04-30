@@ -11,7 +11,7 @@ from threading import Thread, Event
 ############################### TODO: try to avoin warnings in some way about pandas tables 
 import warnings
 warnings.filterwarnings("ignore")
-
+ 
 
 
 

@@ -10,10 +10,10 @@ import pandas as pd
 
 class PoolConnector:
     def __init__(self, verbose=False):
-
         self.verbose = verbose
         scriptPath = os.path.dirname(os.path.realpath(__file__))
-        conf_file_name=os.path.join(scriptPath, "..", "parser.conf")
+        self.parserPath = os.path.join(scriptPath, "..")
+        conf_file_name=os.path.join(self.parserPath, "parser.conf")
         with open(conf_file_name, "r") as sql_conf_file:
             conf_str = sql_conf_file.read()
             sql_conf = json.loads(conf_str)['sql']
@@ -23,8 +23,8 @@ class PoolConnector:
         self.install_db()
 
     def install_db(self):
-        install_query_path = os.path.join('scripts', 'install.sql')
-        proc_query_path = os.path.join('scripts', 'get_mature_blocks.sql')
+        install_query_path = os.path.join(self.parserPath, 'scripts', 'install.sql')
+        proc_query_path = os.path.join(self.parserPath, 'scripts', 'get_mature_blocks.sql')
         with open(install_query_path, 'r') as query_file:
             install_query = query_file.read()
         with open(proc_query_path, 'r') as query_file:
@@ -49,6 +49,11 @@ class PoolConnector:
             self.execute_complex_query(cur, query)
             conn.commit()
             conn.close()
+        except pymysql.InternalError as error:
+            code, message = error.args
+            print(">>>>>>>>>>>>>", code, message)
+            print('FAILED TO EXECUTE QUERY')
+            print(query)
         except Exception as e:
             print('FAILED TO EXECUTE QUERY')
             print(query)
@@ -69,6 +74,11 @@ class PoolConnector:
             res = list(cur.fetchall())
             conn.close()
             return res
+        except pymysql.InternalError as error:
+            code, message = error.args
+            print(">>>>>>>>>>>>>", code, message)
+            print('FAILED TO EXECUTE QUERY')
+            print(query)
         except:
             print("EXCEPTION IN QUERY:")
             print(query)

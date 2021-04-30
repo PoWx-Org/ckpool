@@ -14,9 +14,11 @@ import warnings
 warnings.filterwarnings("ignore")
  
 
+scriptPath = os.path.dirname(os.path.realpath(__file__))
+logPath=os.path.join(scriptPath, "..", "logs", "accounter.log")
+
 print("reading confgs...")
 
-scriptPath = os.path.dirname(os.path.realpath(__file__))
 ckpoolDir = os.path.join(scriptPath, "..", "..", "..")
 
 logDir = os.path.join(ckpoolDir, "logs")

@@ -13,10 +13,11 @@ class PoolConnector:
         self.verbose = verbose
         scriptPath = os.path.dirname(os.path.realpath(__file__))
         self.parserPath = os.path.join(scriptPath, "..")
-        conf_file_name=os.path.join(self.parserPath, "parser.conf")
+        self.ckpoolPath = os.path.join(self.parserPath, "..", "..")
+        conf_file_name=os.path.join(self.ckpoolPath, "ckpool.conf")
         with open(conf_file_name, "r") as sql_conf_file:
-            conf_str = sql_conf_file.read()
-            sql_conf = json.loads(conf_str)['sql']
+            conf_str = sql_conf_file.read().split('Comments from here on are ignored.')[0]
+            sql_conf = json.loads(conf_str)['parser']['sql']
         self.username = sql_conf['auth']
         self.password = sql_conf['pass']
         self.hostname = sql_conf['host']

@@ -75,18 +75,19 @@ BUILDING:
 Building ckpool standalone without ckdb has no dependencies outside of the
 basic build tools on any linux installation.
 
+```
 sudo apt-get install build-essential yasm
 ./configure --without-ckdb
 make
-
+```
 
 Building with ckdb requires installation of the postgresql, gsl and ssl
 development libraries.
-
+```
 sudo apt-get install build-essential yasm libpq-dev libgsl-dev
 ./configure
 make
-
+```
 older distributions may instead require a different version of gsl:
  sudo apt-get install build-essential libpq-dev libgsl0ldbl libgsl0-dev yasm
 
@@ -94,12 +95,12 @@ N.B. ckdb also requires libssl-dev but libpq-dev depends on it and installs it
 
 
 Building from git also requires autoconf and automake
-
+```
 sudo apt-get install build-essential yasm libpq-dev libgsl-dev autoconf automake libtool
 ./autogen.sh
 ./configure
 make
-
+```
 
 Binaries will be built in the src/ subdirectory. Binaries generated will be:
 ckpool - The main pool back end
@@ -124,7 +125,7 @@ communicate with each other and a web server so these will not be documented.
 RUNNING:
 
 ckpool supports the following options:
-
+```
 -A | --standalone
 -c CONFIG | --config CONFIG
 -d CKDB-NAME | --ckdb-name CKDB-NAME
@@ -216,10 +217,10 @@ but in addition it will accept username/passwords from the stratum connects
 and try to open additional connections with those credentials to the upstream
 pool specified in the configuration file and then reconnect miners to mine with
 their chosen username/password to the upstream pool.
-
+```
 
 ckdb takes the following options:
-
+```
 -b DBPREFIX | --dbprefix DBPREFIX
 -c CONFIG | --config CONFIG
 -d DBNAME | --dbname DBNAME
@@ -238,7 +239,7 @@ ckdb takes the following options:
 
 
 ckpmsg and notifier support the -n, -p and -s options
-
+```
 ---
 CONFIGURATION
 
@@ -251,7 +252,7 @@ configurations for ckpool and ckproxy are included with the source. Entries
 after the valid json are ignored and the space there can be used for comments.
 The options recognised are as follows:
 
-
+```
 "btcd" : This is an array of bitcoind(s) with the options url, auth  and pass
 which match the configured bitcoind. The optional boolean field notify tells
 ckpool this btcd is using the notifier and does not need to be polled for block
@@ -310,3 +311,4 @@ maximum.
 
 "maxclients" : Optional upper limit on the number of clients ckpool will
 accept before rejecting further clients.
+```

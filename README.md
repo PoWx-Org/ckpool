@@ -74,6 +74,4 @@ it is also important to run the ckpool wth verbosity level >=5, preferably 5.
 Example:
 ```
 ./src/ckpool -c ./ckpool.conf -l 5
-```
-
-Here is also some code from 
+``` 

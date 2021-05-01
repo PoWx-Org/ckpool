@@ -8,16 +8,24 @@ from rpcutils import RpcConnector
 import pandas as pd
 import numpy as np
 from threading import Thread, Event
+import utils
+
+
 
 ############################### TODO: try to avoin warnings in some way about pandas tables 
 import warnings
 warnings.filterwarnings("ignore")
- 
 
 scriptPath = os.path.dirname(os.path.realpath(__file__))
-logPath=os.path.join(scriptPath, "..", "logs", "accounter.log")
+logPrintPath=os.path.join(scriptPath, "..", "logs")
+from pathlib import Path
+Path(logPrintPath).mkdir(parents=True, exist_ok=True)
+logPrintPath = os.path.join(logPrintPath, "payer.log")
 
-print("reading confgs...")
+def print_log(*args):
+    utils.print_log(*args, filename=logPrintPath)
+
+print_log("reading confgs...")
 
 ckpoolDir = os.path.join(scriptPath, "..", "..", "..")
 
@@ -53,9 +61,9 @@ CHECKLOGS_PERIOD = configures['checklogs_period']
 
 ############# Connecting to the database
 ############# TODO: give configs as parameter instead of read it in dbutils
-print('creating database or connecting to existing one...')
-pool_connector = PoolConnector()
-rpc_connector = RpcConnector(pool_configures)
+print_log('creating database or connecting to existing one...')
+pool_connector = PoolConnector(logPrintPath)
+rpc_connector = RpcConnector(pool_configures, logPrintPath)
 
 
 
@@ -64,17 +72,17 @@ def check_mature_blocks(connector, maturity=100):
     blocks = connector.get_mature_blocks(cur_height=cur_height, maturity=maturity)
 
     if len(blocks) == 0:
-        print("No mature unpaid blocks")
+        print_log("No mature unpaid blocks")
     else:
-        print("Detected mature unpaid blocks")
-        print(blocks)
+        print_log("Detected mature unpaid blocks")
+        print_log(blocks)
     
     for index, block_example in blocks.iterrows():
         answer = rpc_connector.request_rpc('getblock', [block_example['hash']])
 
         if answer is None:
-            print(f'Block {dict(block_example)} disappered!')
-            print(answer) 
+            print_log(f'Block {dict(block_example)} disappered!')
+            print_log(answer) 
             connector.add_transaction(block_example['id'], 'null', 'disappeared', 'null')
             continue
         pay_stat = get_pay_info(block_example, connector)
@@ -97,9 +105,9 @@ def get_pay_info(block_example, connector):
     all_shares = shares_to_pay['shares'].sum()
 
     if all_shares == 0:
-        print("block mined with 0 shares spent, no payment")
+        print_log("block mined with 0 shares spent, no payment")
         all_shares=1
-    shares_to_pay['shares'] = (shares_to_pay['shares']* reward / all_shares).astype(float).round(8)
+    shares_to_pay['shares'] = (shares_to_pay['shares'].astype(float) * float(reward) / all_shares).astype(float).round(8)
     shares_to_pay = shares_to_pay[shares_to_pay['shares'] != 0]
     shares_to_pay['valid_addr'] = shares_to_pay['user'].apply(validate_addr)
     shares_to_pay = shares_to_pay[shares_to_pay['valid_addr']]
@@ -110,30 +118,30 @@ def validate_addr(addr):
     if answ is None:
         return False
     if not answ['isvalid']:
-        print(f"Invalid address {addr}!")
+        print_log(f"Invalid address {addr}!")
     return answ['isvalid']
 
 def pay_for_block(id_block, pay_stat, connector):
     if len(pay_stat) == 0:
-        print('nothing to pay, adding record zero payed')
+        print_log('nothing to pay, adding record zero payed')
         connector.add_transaction(id_block, 'null', 'sent', 0)
         return
     amounts = pay_stat.set_index('user')['shares'].to_dict()
-    print(amounts)
+    print_log(amounts)
     amounts_string = json.dumps(amounts)
     params = ["", amounts, 6, 'mining_payout', list(amounts.keys()), True, 6, 'ECONOMICAL']
-    print("paying for block")
-    print(params)
+    print_log("paying for block")
+    print_log(params)
     try:
         answ = rpc_connector.request_rpc('sendmany', params)
         txn_hash = answ
         if txn_hash is None:
-            print('result is None')
-            print(answ)
-        print("Transaction hash: ", txn_hash)
+            print_log('result is None')
+            print_log(answ)
+        print_log("Transaction hash: ", txn_hash)
         connector.add_transaction(id_block, txn_hash, 'sent', sum(pay_stat['shares']))
     except Exception as e:
-        print(e)
+        print_log(e)
 
 
 
@@ -145,14 +153,17 @@ class PayingThread(Thread):
         self.connector = connector
 
     def run(self):
-        print("checking mature blocks")
+        print_log("checking mature blocks")
         check_mature_blocks(self.connector, MATURITY)
         while not self.stopped.wait(CHECKMATURE_PERIOD):
-            print("checking mature blocks")
-            check_mature_blocks(self.connector, MATURITY)
-            pass
+            try:
+                print_log("checking mature blocks")
+                check_mature_blocks(self.connector, MATURITY)
+                pass
+            except Exception as e:
+                print(f"Exception {e} in parser thread" )
 
-print("creating paying thread...")
+print_log("creating paying thread...")
 
 stopFlag = Event()
 payment_thread = PayingThread(stopFlag, pool_connector)

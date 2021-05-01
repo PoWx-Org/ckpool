@@ -8,19 +8,24 @@ from rpcutils import RpcConnector
 import pandas as pd
 import numpy as np
 from threading import Thread, Event
-
+import utils
 ############################### TODO: try to avoin warnings in some way about pandas tables 
 import warnings
 warnings.filterwarnings("ignore")
- 
+
 
 scriptPath = os.path.dirname(os.path.realpath(__file__))
+logPrintPath=os.path.join(scriptPath, "..", "logs")
+from pathlib import Path
+Path(logPrintPath).mkdir(parents=True, exist_ok=True)
+logPrintPath=os.path.join(logPrintPath, "accounter.log")
 
-logPath=os.path.join(scriptPath, "..", "logs", "accounter.log")
+PRINT_PERIOD = 120
 
+def print_log(*args):
+    utils.print_log(*args, filename=logPrintPath)
 
-
-print("reading confgs...")
+print_log("reading confgs...")
 
 ckpoolDir = os.path.join(scriptPath, "..", "..", "..")
 
@@ -51,25 +56,24 @@ CHECKLOGS_PERIOD = configures['checklogs_period']
 
 ############# Connecting to the database
 ############# TODO: give configs as parameter instead of read it in dbutils
-print('creating database or connecting to existing one...')
-pool_con = PoolConnector()
-rpc_connector = RpcConnector(pool_configures)
+print_log('creating database or connecting to existing one...')
+pool_con = PoolConnector(logPrintPath)
+rpc_connector = RpcConnector(pool_configures, logPrintPath)
 
 ############ Check if logs exist
 if os.path.isfile(logPath):
-    print(f"path {logPath} is a file, will try to parse it...")
+    print_log(f"path {logPath} is a file, will try to parse it...")
 else:
-    print(f"path {logPath} is not a file!")
+    print_log(f"path {logPath} is not a file!")
     exit(0)
 
 
 #### Function what to do in case block is found
 
 def found_block(line):
-    print("Block found, doing something usefull")
-    parsed_info = parse("[{time:ti}] Solved and confirmed block {height:d} {}", line)
-    print(parsed_info)
-    read_shares()
+    print_log("Block found, doing something usefull")
+    parsed_info = parse("[{time:ti}] Solved and confirmed block {height:d}{}", line)
+    print_log(parsed_info)
     height = parsed_info['height']
     block_hash = rpc_connector.request_rpc("getblockhash", [height])
     block_info = rpc_connector.request_rpc("getblock", [block_hash, 3])
@@ -78,8 +82,8 @@ def found_block(line):
     pool_con.add_mined_block(block_hash, str(parsed_info['time']), height, reward)
     block_id = pool_con.get_block_id_by_hash(block_hash)
     pool_con.set_stats(block_id, share_stats)
-    print(share_stats)
-    print(f"Reward: {reward}")
+    print_log(share_stats)
+    print_log(f"Reward: {reward}")
 
 
 ######## Get current share statistics about users
@@ -87,11 +91,11 @@ def found_block(line):
 def read_shares():
     share_stats = dict()
     usersDir = os.path.join(logDir, 'users')
-    print(usersDir)
-    print(os.listdir(usersDir))
+    print_log(usersDir)
+    print_log(os.listdir(usersDir))
     for user in os.listdir(usersDir):
         user_file_path = os.path.join(usersDir, user)
-        print(user_file_path)
+        print_log(user_file_path)
         with open(user_file_path,'r') as user_file:
             cur_stat = user_file.read()
             info = json.loads(cur_stat)
@@ -109,28 +113,31 @@ class ParserThread(Thread):
         Thread.__init__(self)
         self.stopped = event
         self.counter = 0
-        self.print_period = 1 if (30 //  CHECKLOGS_PERIOD) == 0 else 30 //  CHECKLOGS_PERIOD
+        self.print_period = 1 if (PRINT_PERIOD //  CHECKLOGS_PERIOD) == 0 else PRINT_PERIOD // CHECKLOGS_PERIOD
         ############## TODO: do something if file is too big. Make file cleaning
-        with open(logPath,'r') as infile:
-            lines = infile.readlines()
-            self.curs = infile.tell()
+        with open(logPath,'w') as infile:
+            infile.write("")
 
     def run(self):
         while not self.stopped.wait(CHECKLOGS_PERIOD):
-            self.counter += 1
-            if (self.counter % self.print_period) == 0:
-                print(f'checked logs {self.print_period} times')
-            with open(logPath,'r') as infile:
-                infile.seek(self.curs)
-                lines = infile.readlines()
-                if len(lines) > 0:
-                    for line in lines:
-                        if 'Solved and confirmed block' in line:
-                            try:
-                                found_block(line)
-                            except Exception as e:
-                                print(f"Ecxception {e} occured during handling line:\n {line}\n")
-                self.curs = infile.tell()
+            try:
+                self.counter += 1
+                if (self.counter % self.print_period) == 0:
+                    print_log(f'checked logs {self.print_period} times')
+                with open(logPath,'r') as infile:
+                    lines = infile.readlines()
+                    if len(lines) > 0:
+                        for line in lines:
+                            if 'Solved and confirmed block' in line:
+                                try:
+                                    found_block(line)
+                                except Exception as e:
+                                    print_log(f"Ecxception \n{str(e)}\n occured during handling line:\n {line}\n")
+                                    raise e
+            except Exception as e:
+                print(f"Exception \n{str(e)} \nin parser thread" )
+            with open(logPath,'w') as infile:
+                infile.write("")
 
 stopFlag = Event()
 parser_thread = ParserThread(stopFlag)

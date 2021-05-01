@@ -2,6 +2,7 @@ import json
 import pymysql
 import os
 import pandas as pd
+from utils import print_log
 # def insert_stats
 
 # install_db()
@@ -9,7 +10,8 @@ import pandas as pd
 # execute_query('SELECT * FROM pool_base.mined_blocks;')
 
 class PoolConnector:
-    def __init__(self, verbose=False):
+    def __init__(self, log_file, verbose=False):
+        self.log_file = log_file
         self.verbose = verbose
         scriptPath = os.path.dirname(os.path.realpath(__file__))
         self.parserPath = os.path.join(scriptPath, "..")
@@ -22,6 +24,11 @@ class PoolConnector:
         self.password = sql_conf['pass']
         self.hostname = sql_conf['host']
         self.install_db()
+
+
+    def print_log(self, *args):
+        print_log(*args, filename=self.log_file)
+
 
     def install_db(self):
         install_query_path = os.path.join(self.parserPath, 'scripts', 'install.sql')
@@ -45,19 +52,19 @@ class PoolConnector:
         try:
             conn = pymysql.connect( host=self.hostname, user=self.username, passwd=self.password)
             if self.verbose:
-                print(query)
+                self.print_log(query)
             cur = conn.cursor()
             self.execute_complex_query(cur, query)
             conn.commit()
             conn.close()
         except pymysql.InternalError as error:
             code, message = error.args
-            print(">>>>>>>>>>>>>", code, message)
-            print('FAILED TO EXECUTE QUERY')
-            print(query)
+            self.print_log(">>>>>>>>>>>>>", code, message)
+            self.print_log('FAILED TO EXECUTE QUERY')
+            self.print_log(query)
         except Exception as e:
-            print('FAILED TO EXECUTE QUERY')
-            print(query)
+            self.print_log('FAILED TO EXECUTE QUERY')
+            self.print_log(query)
 
     def add_mined_block(self, hash, date, height, reward):
         query = f'''USE `pool_base`; INSERT INTO `mined_blocks` 
@@ -69,7 +76,7 @@ class PoolConnector:
         try:
             conn = pymysql.connect( host=self.hostname, user=self.username, passwd=self.password)
             if self.verbose:
-                print(query)
+                self.print_log(query)
             cur = conn.cursor()
             self.execute_complex_query(cur, query)
             res = list(cur.fetchall())
@@ -77,12 +84,12 @@ class PoolConnector:
             return res
         except pymysql.InternalError as error:
             code, message = error.args
-            print(">>>>>>>>>>>>>", code, message)
-            print('FAILED TO EXECUTE QUERY')
-            print(query)
+            self.print_log(">>>>>>>>>>>>>", code, message)
+            self.print_log('FAILED TO EXECUTE QUERY')
+            self.print_log(query)
         except:
-            print("EXCEPTION IN QUERY:")
-            print(query)
+            self.print_log("EXCEPTION IN QUERY:")
+            self.print_log(query)
 
     def get_block_id_by_hash(self, hash):
         query = f'''SELECT id_block FROM pool_base.mined_blocks

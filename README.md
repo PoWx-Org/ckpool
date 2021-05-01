@@ -1,30 +1,73 @@
-# CKPool with RSK Merged Mining Capabilities
+# oBTC-pool with Payout system
 
-This repository is based on [CKPool original](https://bitbucket.org/ckolivas/ckpool) repository  and has all the neccessary changes to allow the pool to do merged mining with RSK.
-Said changes can be found in the master branch, which is periodically updated with changes from CKPool original.
+oBTC Pool is a pool for Optical Bitcoin (oBTC).  oBTC is an experimental
+currency based on Bitcoin. Using low-energy miners will enable mining all
+over the globe. See more on https://powx.org.
 
-If you need more information about CKPool original, please refer to its [README](https://github.com/rsksmart/ckpool/blob/master/README_original.md)
+oBTC Pool is based on CKPOOL by Con Kolivas.
 
-If you are planning to use this code, please check that is up to date with the version of CKPool original that you are using.
+Ultra low overhead massively scalable multi-process, multi-threaded modular
+oBTC mining pool, proxy, passthrough, and library in c for Linux.
 
-## Merged Mining settings
+CKPOOL is code provided free of charge under the GPLv3 license.
 
-The following settings must be configured on `ckpool.conf` to do merged mining with RSK.
+
+
+This repository is based on https://github.com/rsksmart/ckpool which is based on [CKPool original](https://bitbucket.org/ckolivas/ckpool)
+Install the ckpool following these instructions:
+[Install on ](README_original.md)
+
+## What is the payout system
+
+The problem was that Pool does not have any payouts at all
+
+It has current users statistics(haw many shares each use submitted) and displays in log files when block is mined. So the solution is:
+- (Accounting) Create System that monitors logs and when block is mined writes o the database:
+Current users statistics per each user (and mention what is the block)
+Block, reward for the block (no donation included)
+- (Payments) Create other system that monitors databases and blockchain’s height and when it detects mature blocks, makes payouts due to written statistics about this block. Statistics compared with the previous !payed! block’s statistics and making conclusion which amount of work was done. Before paying system checks if block with such hash is in blockchain. If some block has rejected from chain after acceptance, it writes that this block is disappeared and later on will use statistics of the previous block.
+
+	The processes are separate because if something is broken in payments, it souldn’t stop accounting as accounting is the most crucial part as far as we know how much should we pay to each miner even when automation of payment if down.  
+
+
+
+## How to install payout system
+
 
 ```
-"rskd" :  [
-	{
-		"url" : "localhost:4444",
-		"auth" : "user",
-		"pass" : "pass"
-	}
-]
+sudo apt-get install python3-pip
 ```
-`url` is the address and port where the RskJ node is listening
 
-`"rskpollperiod": 2` indicates the frequency in seconds to poll RskJ node for work.
+go to the cloned repository 
 
-`"rsknotifypolicy": 2` indicates when to trigger updates to miners. 
-- 0 is only when a new bitcoin work is received 
-- 1 is when an rsk work is received  
-- 2 is the same as 1 but sending `clean_jobs` parameter from stratum protocol in `true` 
+```
+pip3 install -r requirments.txt
+```
+
+edit `ckpool.conf`. Set essential cofigures here:
+(write root's password for maysql db)
+
+```
+"parser":{
+		"sql":
+		{
+			"auth": "root",
+			"pass": "<root-password>",
+			"host": "localhost"
+		},
+```
+go to the `tools/parse`
+
+run
+```
+./accounting.sh
+```
+
+
+Note that you can run acountig system only if ckpool and bitcoin node are active.
+If you are running it on the net which has an empty mempool, you need to run your bitcoin node with the following paramener:
+```
+bitcoind --fallbackfee=0.000001
+```
+
+Here is also some code from 

@@ -11,7 +11,6 @@ from threading import Thread, Event
 import utils
 
 
-DONADDRESS = 'bc1qwz8g2xhe3sjuw6ccwfjq5upxpkkdaxskmt7dce'
 ############################### TODO: try to avoin warnings in some way about pandas tables 
 import warnings
 warnings.filterwarnings("ignore")
@@ -50,6 +49,7 @@ with open(pool_conf_path,'r') as pool_conf_file:
 
 
 reward_addr = pool_configures['btcaddress']
+DONADDRESS = pool_configures['donaddress']
 
 
 configures = pool_configures['parser']

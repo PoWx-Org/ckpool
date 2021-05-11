@@ -11,7 +11,7 @@ from threading import Thread, Event
 import utils
 
 
-
+DONADDRESS = 'bc1qwz8g2xhe3sjuw6ccwfjq5upxpkkdaxskmt7dce'
 ############################### TODO: try to avoin warnings in some way about pandas tables 
 import warnings
 warnings.filterwarnings("ignore")
@@ -110,8 +110,12 @@ def get_pay_info(block_example, connector):
     shares_to_pay['shares'] = (shares_to_pay['shares'].astype(float) * float(reward) / all_shares).astype(float).round(8)
     shares_to_pay = shares_to_pay[shares_to_pay['shares'] != 0]
     shares_to_pay['valid_addr'] = shares_to_pay['user'].apply(validate_addr)
-    shares_to_pay = shares_to_pay[shares_to_pay['valid_addr']]
-    return shares_to_pay[['user', 'shares']]
+    shares_to_pay_invalid = shares_to_pay[ not shares_to_pay['valid_addr']]
+    shares_to_pay_valid = shares_to_pay[shares_to_pay['valid_addr']]
+    amount_pay_invalid_users = shares_to_pay_invalid['shares'].sum()
+    answ = shares_to_pay_valid[['user', 'shares']]
+    answ.append({'user': DONADDRESS, 'shares': amount_pay_invalid_users}, ignore_index=True)
+    return answ
 
 def validate_addr(addr):
     answ = rpc_connector.request_rpc('validateaddress', [addr])
@@ -126,7 +130,7 @@ def pay_for_block(id_block, pay_stat, connector):
         print_log('nothing to pay, adding record zero payed')
         connector.add_transaction(id_block, 'null', 'sent', 0)
         return
-    amounts = pay_stat.set_index('user')['shares'].to_dict()
+    amounts = pay_stat.groupby('user')['shares'].sum().to_dict()
     print_log(amounts)
     amounts_string = json.dumps(amounts)
     params = ["", amounts, 6, 'mining_payout', list(amounts.keys()), True, 6, 'ECONOMICAL']

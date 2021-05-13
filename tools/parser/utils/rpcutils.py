@@ -8,7 +8,7 @@ class RpcConnector:
         self.config = config
         self.log_file = log_file
     
-    def print_log(*args):
+    def print_log(self, *args):
         print_log(*args, filename=self.log_file)
     
     def request_rpc(self, method, params=[], verbosity=1):

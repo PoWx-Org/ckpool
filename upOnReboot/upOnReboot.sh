@@ -1,4 +1,4 @@
-pooldir="/home/opowuser/ckpool" bitcoindir="/home/opowuser/obtc-core/build/scr" uidir="/home/opowuser/obtc-pool-web-ui"
+pooldir="/home/opowuser/ckpool" bitcoindir="/home/opowuser/obtc-core/build/src" uidir="/home/opowuser/obtc-pool-web-ui"
 
 if [ -z "$1" ]
   then

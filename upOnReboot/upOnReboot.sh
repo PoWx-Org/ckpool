@@ -5,6 +5,7 @@ if [ -z "$1" ]
           echo "No first argument(pool's directory). Using default ( $pooldir )"
   else
     echo "Provided pool directory: $1"
+    pooldir=$1
 fi
 
 if [ -z "$2" ]
@@ -12,6 +13,7 @@ if [ -z "$2" ]
     echo "No second argument(bitcoin's directory). Using default ( $bitcoindir )"
   else
     echo "Provided bicoin directory: $2"
+    bitcoindir=$2
 fi
 
 if [ -z "$3" ]
@@ -19,6 +21,7 @@ if [ -z "$3" ]
     echo "No third argument(pool ui's directory). Using default ( $uidir )"
   else
     echo "provided pool ui's: $3"
+    uidir=$3
 fi
 
 echo \
@@ -36,7 +39,7 @@ RestartSec=3
 User=opowuser
 Group=opowuser
 WorkingDirectory=$bitcoindir
-ExecStart=$bitcoindir/bitcoind -testnet -fallbackfee=0.00000001
+ExecStart=$bitcoindir/bitcoind -fallbackfee=0.00000001
 
 [Install]
 WantedBy=multi-user.target

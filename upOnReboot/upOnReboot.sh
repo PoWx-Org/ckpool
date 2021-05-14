@@ -88,7 +88,7 @@ echo \
 "
 [Unit]
 Description=oBTC pool WEB Interface
-After=network.target bitcoind.service obtc-pool.service accounter.sevice
+After=network.target bitcoind.service obtc-pool.service accounter.service
 StartLimitIntervalSec=10
 StartLimitBurst=5
 
@@ -111,7 +111,3 @@ systemctl enable bitcoind
 systemctl enable obtc-pool
 systemctl enable accounter
 systemctl enable obtc-pool-ui
-systemctl start bitcoind
-systemctl start obtc-pool
-systemctl start accounter
-systemctl start obtc-pool-ui

@@ -92,25 +92,41 @@ def check_mature_blocks(connector, maturity=100):
 def get_pay_info(block_example, connector):
     reward = block_example['reward']
     prev_block = connector.get_prev_block(block_example['id'])
+    #print("prev block", prev_block)
     cur_shares = connector.get_shares(block_example['id'])
+    #print("DEBUG: cur_shares", cur_shares)
     if prev_block is None:
+        print("DEBUG: !!!!!!!!!!!!!!!!!prev block is NONE!!!!!!!!!!!!")
         shares_to_pay = cur_shares
     else:
+        print('DEBUG: prev block is not None')
         prev_shares = connector.get_shares(prev_block['id'])
+        #print("DEBUG: prev_shares", prev_shares)
         shares_diff = cur_shares.merge(prev_shares, how="left", on="user", suffixes=['_cur', '_prev']).fillna(0)
         shares_diff['shares'] = shares_diff['shares_cur'] - shares_diff['shares_prev']
+        #print("DEBUG: shares_diff", shares_diff)
         shares_to_pay = shares_diff[['user', 'shares']]
+    #print("DEBUG: shares_to_pay", shares_to_pay)
     
 
     all_shares = shares_to_pay['shares'].sum()
-
     if all_shares == 0:
         print_log("block mined with 0 shares spent, no payment")
         all_shares=1
     shares_to_pay['shares'] = (shares_to_pay['shares'].astype(float) * float(reward) / all_shares).astype(float).round(8)
     shares_to_pay = shares_to_pay[shares_to_pay['shares'] != 0]
+    
+    
+    
+    
+    #print("DEBUG: shares_to_pay after removing zeroes", shares_to_pay)
     shares_to_pay['valid_addr'] = shares_to_pay['user'].apply(validate_addr)
-    shares_to_pay = shares_to_pay[shares_to_pay['valid_addr']]
+    #print("DEBUG: shares_to_pay after validating addresses", shares_to_pay)
+    valid_addresses = shares_to_pay['valid_addr']
+    if len(valid_addresses)==0:
+        return pd.DataFrame(columns=['user', 'shares'])
+    shares_to_pay = shares_to_pay[valid_addresses]
+    #print("DEBUG: shares_to_pay after leaving ony valid addresses", shares_to_pay)
     return shares_to_pay[['user', 'shares']]
 
 def validate_addr(addr):
